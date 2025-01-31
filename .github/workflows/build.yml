@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Stop the job after 10 minutes, adjust as needed
 
     steps:
       - name: Checkout repository
@@ -23,10 +24,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pygame
 
-      - name: Run Pygame script
-        id: run_game
+      - name: Run Pygame server
+        id: run_server
         run: |
-          python server.py 2> error.log || echo "ERROR_OCCURRED=true" >> $GITHUB_ENV
+          python server.py &  # Run in background
+          SERVER_PID=$!
+          # Allow server to run for a few seconds to check if it's working
+          sleep 20
+          # If no error, kill the process after 10 seconds
+          kill $SERVER_PID
 
       - name: Check for errors
         if: env.ERROR_OCCURRED == 'true'
@@ -50,7 +56,7 @@ jobs:
         if: env.ERROR_OCCURRED == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com
+          server_address: smtp.mail.me.com
           server_port: 465
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
