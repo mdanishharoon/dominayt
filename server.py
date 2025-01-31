@@ -1,4 +1,5 @@
-import socket
+#(added an ee, inducing an error))
+import sockete
 from _thread import start_new_thread
 import pickle
 
@@ -13,6 +14,27 @@ players = {}
 cannons = {}
 ID = 0
 
+def random_game_function():
+    """A random game-related function.  Doesn't interact with your existing code."""
+
+    game_elements = ["sword", "shield", "potion", "enemy", "treasure"]
+    chosen_element = random.choice(game_elements)
+
+    if chosen_element == "treasure":
+        print("You found a hidden treasure chest!")
+        gold_found = random.randint(50, 200)
+        print(f"You earned {gold_found} gold coins!")
+        return gold_found #returns the gold found
+
+    elif chosen_element == "enemy":
+        enemy_strength = random.randint(1, 10)
+        print(f"A wild {chosen_element} appears! It has strength {enemy_strength}.")
+        return -enemy_strength #returns the negative strength of the enemy
+
+    else:
+        print(f"You found a {chosen_element}.")
+        return chosen_element #returns the element found
+    
 
 def threaded_clients(conn, id):
     global players
