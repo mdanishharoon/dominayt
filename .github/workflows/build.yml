@@ -1,0 +1,62 @@
+name: Build and Error Tracking
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pygame
+
+      - name: Run Pygame script
+        id: run_game
+        run: |
+          python server.py 2> error.log || echo "ERROR_OCCURRED=true" >> $GITHUB_ENV
+
+      - name: Check for errors
+        if: env.ERROR_OCCURRED == 'true'
+        run: |
+          echo "Error detected. Extracting details..."
+          ERROR_LINE=$(grep -oP 'File ".*?", line \K\d+' error.log | tail -1)
+          ERROR_FILE=$(grep -oP 'File "\K[^"]+' error.log | tail -1)
+          echo "Error in $ERROR_FILE at line $ERROR_LINE"
+          echo "ERROR_LINE=$ERROR_LINE" >> $GITHUB_ENV
+          echo "ERROR_FILE=$ERROR_FILE" >> $GITHUB_ENV
+
+      - name: Find responsible developer
+        if: env.ERROR_OCCURRED == 'true'
+        run: |
+          AUTHOR=$(git blame -L $ERROR_LINE,$ERROR_LINE -- $ERROR_FILE | awk '{print $2}')
+          AUTHOR_EMAIL=$(git log -1 --format='%ae' -s $AUTHOR)
+          echo "Author: $AUTHOR ($AUTHOR_EMAIL)"
+          echo "AUTHOR_EMAIL=$AUTHOR_EMAIL" >> $GITHUB_ENV
+
+      - name: Send Email Notification
+        if: env.ERROR_OCCURRED == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Build Failed - You introduced an error!"
+          to: ${{ env.AUTHOR_EMAIL }}
+          body: |
+            Your commit introduced an error in ${{ env.ERROR_FILE }} at line ${{ env.ERROR_LINE }}.
+            Please fix it ASAP!
+          from: "GitHub Actions Bot"
