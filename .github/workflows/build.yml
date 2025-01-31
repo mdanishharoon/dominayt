@@ -42,6 +42,12 @@ jobs:
             echo "ERROR_OCCURRED=false" >> $GITHUB_ENV
           fi
 
+      - name: Read error log into variable
+        if: env.ERROR_OCCURRED == 'true'
+        run: |
+          ERROR_CONTENT=$(cat error_output.log)
+          echo "ERROR_CONTENT=$ERROR_CONTENT" >> $GITHUB_ENV  # Set the error content into an env variable
+
       - name: Find responsible developer
         if: env.ERROR_OCCURRED == 'true'
         run: |
@@ -62,5 +68,5 @@ jobs:
           to: ${{ env.AUTHOR_EMAIL }}
           body: |
             Your commit caused the following error during the build process:
-            $(cat error_output.log)  # Use the content of the error_output.log file
+            ${{ env.ERROR_CONTENT }}  # Use the content of the error_output.log file
           from: "GitHub Actions Bot"
