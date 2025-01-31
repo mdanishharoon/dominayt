@@ -28,14 +28,18 @@ jobs:
         id: run_server
         run: |
           # Run server script and capture any errors
-          python server.py > output.log 2>&1 || echo "Error occurred in server.py" >> error.log
+          python server.py || echo "Error occurred in server.py" >> error.log
 
       - name: Check for errors
         run: |
-          # If error.log contains an error, save it to a new file for email
+          # Check if error.log contains any error
           if grep -q "Error occurred in server.py" error.log; then
-            echo "Error detected. Capturing full error output..."
-            cat output.log >> error_output.log  # Save the full output to a new file
+            echo "Error detected. Extracting details..."
+            ERROR_LINE=$(grep -oP 'File ".*?", line \K\d+' error.log | tail -1)
+            ERROR_FILE=$(grep -oP 'File "\K[^"]+' error.log | tail -1)
+            echo "Error in $ERROR_FILE at line $ERROR_LINE"
+            echo "ERROR_LINE=$ERROR_LINE" >> $GITHUB_ENV
+            echo "ERROR_FILE=$ERROR_FILE" >> $GITHUB_ENV
             echo "ERROR_OCCURRED=true" >> $GITHUB_ENV
           else
             echo "No error detected. Proceeding with job."
@@ -61,6 +65,6 @@ jobs:
           subject: "Build Failed - You introduced an error!"
           to: ${{ env.AUTHOR_EMAIL }}
           body: |
-            Your commit caused the following error during the build process:
-            $(cat error_output.log)  # Directly read from error_output.log
+            Your commit introduced an error in one of your last commits. Check Build logs for more information and
+            kindly fix it ASAP!
           from: "GitHub Actions Bot"
