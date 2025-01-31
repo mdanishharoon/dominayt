@@ -1,6 +1,7 @@
-import socket
+import sockete
 from _thread import start_new_thread
 import pickle
+#(added an e to the socket lib import inducing an error)
 
 HOST = '127.0.0.1'
 PORT = 60065
