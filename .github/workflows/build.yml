@@ -35,8 +35,7 @@ jobs:
           # If error.log contains an error, send it in the email
           if grep -q "Error occurred in server.py" error.log; then
             echo "Error detected. Capturing full error output..."
-            ERROR_LOG=$(cat output.log)  # Capture the entire error output
-            echo "ERROR_LOG=$ERROR_LOG" >> $GITHUB_ENV
+            cat output.log >> error_output.log  # Save the full output to a new file
             echo "ERROR_OCCURRED=true" >> $GITHUB_ENV
           else
             echo "No error detected. Proceeding with job."
@@ -63,8 +62,5 @@ jobs:
           to: ${{ env.AUTHOR_EMAIL }}
           body: |
             Your commit caused the following error during the build process:
-            ${{
-              env.ERROR_LOG
-            }}
-            Please fix it ASAP!
+            $(cat error_output.log)  # Use the content of the error_output.log file
           from: "GitHub Actions Bot"
